@@ -21,15 +21,15 @@ async def list_available_curses(message: Message):
 
 
 @router.message(F.text.lower() == MY_CURSES.lower(), IsNotAdmin())
-async def list_available_curses(message: Message):
+async def my_curses(message: Message):
     await message.answer('Скоро здесь будет список курсов, на которые Вы записаны')
 
 
 @router.message(F.text.lower() == HELP.lower(), IsNotAdmin())
-async def list_available_curses(message: Message):
+async def faq(message: Message):
     await message.answer('Скоро здесь будут ответы на вопросы')
 
 
 @router.message(F.text.lower() == NOTIFICATIONS.lower(), IsNotAdmin())
-async def list_available_curses(message: Message):
+async def notifications(message: Message):
     await message.answer('Скоро здесь будет редактировать уведомления')

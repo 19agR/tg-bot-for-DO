@@ -58,16 +58,23 @@ class CoursesDataBase:
         try:
             full_name = data['full_name']
             phone_number = data['phone_number']
+
+            if not isinstance(full_name, str) or not isinstance(phone_number, str):
+                raise KeyError()
+
         except KeyError:
             print('Ошибка формата переданных данных для добавления учителя')
-            return
+            return False
 
         query = "INSERT INTO Teachers (ФИО, 'Номер телефона') VALUES (?, ?)"
         self.execute(query, data=(full_name, phone_number))
 
+        return True
+
     def add_course(self, data: dict):
         """
         format for param data: {
+            'teacher_id'
             'name',
             'description',
             'cost_per_month',
@@ -78,6 +85,7 @@ class CoursesDataBase:
         """
 
         try:
+            teacher_id = data['teacher_id']
             name = data['name']
             description = data['description']
             cost_per_month = data['cost_per_month']
@@ -89,10 +97,14 @@ class CoursesDataBase:
             return
 
         query = """
-        INSERT INTO Teachers (Название, Описание, 'Стоимость в месяц', 'Тип курса', 'Доступных мест', 'Расписание')
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO Teachers (
+        'id Преподавателя', Название, Описание,
+        'Стоимость в месяц', 'Тип курса', 'Доступных мест', 'Расписание'
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """
-        self.execute(query, data=(name, description, cost_per_month, type_course, available_places, timetable))
+        self.execute(query,
+                     data=(teacher_id, name, description, cost_per_month, type_course, available_places, timetable))
 
     def select_courses(self):
         query = "SELECT * FROM Courses"
@@ -107,5 +119,9 @@ class CoursesDataBase:
         return self.execute(query, fetchone=True)
 
 
-db = CoursesDataBase('../data/courses_db.sqlite3')
-db.create_tables()
+if __name__ == '__main__':
+    db = CoursesDataBase('../data/courses_db.sqlite3')
+    db.create_tables()
+else:
+    db = CoursesDataBase('data/courses_db.sqlite3')  # this is needed to be able to open db from other files
+
