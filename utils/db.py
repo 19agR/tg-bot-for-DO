@@ -14,13 +14,13 @@ class CoursesDataBase:
         cursor = con.cursor()
         result = cursor.execute(query, data)
 
-        con.commit()
-        con.close()
-
         if fetchall:
             return result.fetchall()
         elif fetchone:
             return result.fetchone()
+
+        con.commit()
+        con.close()
 
     def create_tables(self):
         query_teachers = """
@@ -97,7 +97,7 @@ class CoursesDataBase:
             return
 
         query = """
-        INSERT INTO Teachers (
+        INSERT INTO Courses (
         'id Преподавателя', Название, Описание,
         'Стоимость в месяц', 'Тип курса', 'Доступных мест', 'Расписание'
         )
@@ -115,13 +115,14 @@ class CoursesDataBase:
         return self.execute(query, fetchone=True)
 
     def select_teacher(self, teacher_id):
-        query = f"SELECT * FROM Teachers WHERE 'id Преподавателя' = {teacher_id}"
+        query = f"SELECT * FROM Teachers WHERE [id Преподавателя] = {teacher_id}"
         return self.execute(query, fetchone=True)
 
 
 if __name__ == '__main__':
     db = CoursesDataBase('../data/courses_db.sqlite3')
     db.create_tables()
+    print(db.execute("SELECT * FROM Teachers WHERE [id Преподавателя] = 1", fetchone=True))
 else:
     db = CoursesDataBase('data/courses_db.sqlite3')  # this is needed to be able to open db from other files
 
