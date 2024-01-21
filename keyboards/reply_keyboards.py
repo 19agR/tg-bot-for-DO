@@ -4,7 +4,7 @@ from keyboards.buttons import *
 
 def build_reply_keyboard(buttons: list[list]):
     buttons_to_add = [[KeyboardButton(text=text) for text in row] for row in buttons]
-    return ReplyKeyboardMarkup(keyboard=buttons_to_add, resize_keyboard=True)
+    return ReplyKeyboardMarkup(keyboard=buttons_to_add, resize_keyboard=True, one_time_keyboard=True)
 
 
 def main_user():
@@ -13,7 +13,7 @@ def main_user():
         [KeyboardButton(text=MY_CURSES), KeyboardButton(text=HELP), KeyboardButton(text=NOTIFICATIONS)]
     ]
 
-    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
+    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True, one_time_keyboard=True)
 
 
 def main_admin():
@@ -22,7 +22,7 @@ def main_admin():
         [KeyboardButton(text=REDACT_HELP)]
     ]
 
-    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
+    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True, one_time_keyboard=True)
 
 
 def redact_curses_menu():
@@ -31,6 +31,6 @@ def redact_curses_menu():
         [KeyboardButton(text=ADD_NEW_TEACHER), KeyboardButton(text=BACK)],
     ]
 
-    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
+    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True, one_time_keyboard=True)
 
 

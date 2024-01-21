@@ -1,15 +1,17 @@
 import asyncio
 from aiogram import Bot, Dispatcher
 from handlers import user, admin
+from callbacks import admin_callbacks
 
 token = '6857731639:AAFhSrrHn1kJBck4XaXPguipZ_iIEwMDgdM'
 
-bot = Bot(token)
+bot = Bot(token, parse_mode='HTML')
 dp = Dispatcher()
 
 dp.include_routers(
     user.router,
-    admin.router
+    admin.router,
+    admin_callbacks.router
 )
 
 

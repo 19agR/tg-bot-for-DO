@@ -3,7 +3,7 @@ from aiogram.types import Message
 from aiogram.filters import CommandStart, Command
 
 from keyboards.buttons import *
-from keyboards.main_menus import main_user
+from keyboards.reply_keyboards import main_user
 from utils.filters import IsNotAdmin
 
 router = Router()

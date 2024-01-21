@@ -4,6 +4,7 @@ import sqlite3
 class CoursesDataBase:
     def __init__(self, path):
         self.path = path
+        self.quantity_courses = self.get_quantity_courses()
 
     def connect(self):
         return sqlite3.connect(self.path)
@@ -105,6 +106,7 @@ class CoursesDataBase:
         """
         self.execute(query,
                      data=(teacher_id, name, description, cost_per_month, type_course, available_places, timetable))
+        self.quantity_courses += 1
 
     def select_courses(self):
         query = "SELECT * FROM Courses"
@@ -118,11 +120,19 @@ class CoursesDataBase:
         query = f"SELECT * FROM Teachers WHERE [id Преподавателя] = {teacher_id}"
         return self.execute(query, fetchone=True)
 
+    def select_teachers(self):
+        query = f"SELECT * FROM Teachers"
+        return self.execute(query, fetchall=True)
 
+    def get_quantity_courses(self):
+        return len(self.execute('SELECT * FROM Courses', fetchall=True))
+
+
+db = None  # need to pass import error
 if __name__ == '__main__':
     db = CoursesDataBase('../data/courses_db.sqlite3')
+    print(db.select_courses())
     db.create_tables()
-    print(db.execute("SELECT * FROM Teachers WHERE [id Преподавателя] = 1", fetchone=True))
 else:
     db = CoursesDataBase('data/courses_db.sqlite3')  # this is needed to be able to open db from other files
 

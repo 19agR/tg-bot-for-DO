@@ -1,11 +1,13 @@
 from aiogram import Router, F
 from aiogram.types import Message
-from aiogram.filters import CommandStart, Command
+from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 
 from keyboards.buttons import *
-from keyboards.main_menus import main_admin, redact_curses_menu, build_reply_keyboard
+from keyboards.inline_keyboards import show_teachers, paginator_courses
+from keyboards.reply_keyboards import main_admin, redact_curses_menu, build_reply_keyboard
 from utils.filters import IsAdmin, IsNoneState
+from utils.mini_functions import print_course
 from utils.states import AddNewTeacher, CreateCourse
 
 from utils.db import db
@@ -76,8 +78,8 @@ async def add_new_teacher_phone_number(message: Message, state: FSMContext):
     data = await state.get_data()
     await state.set_state(AddNewTeacher.accept)
     await message.answer('Проверьте введенные данные:\n'
-                         f'ФИО: {data["full_name"]}\n'
-                         f'Номер телефона: {data["phone_number"]}\n\n'
+                         f'<b><i>ФИО:</b></i> {data["full_name"]}\n'
+                         f'<b><i>Номер телефона:</b></i> {data["phone_number"]}\n\n'
                          'Если все верно, нажмите "Подтвердить". Если хотите отменить добавление, нажмите "Назад"',
                          reply_markup=build_reply_keyboard([[ACCEPT, BACK]]))
 
@@ -111,11 +113,11 @@ async def add_new_teacher_cancel(message: Message, state: FSMContext):
 async def create_new_course(message: Message, state: FSMContext):
     await state.set_state(CreateCourse.teacher_id)
     await message.answer('Вы зашли в форму создания нового курса. \n'
-                         'Введите ID преподавателя, который будет вести этот курс.\n\n'
+                         '<b>Введите ID преподавателя</b>, который будет вести этот курс.\n\n'
                          'Если Вы не помните ID нужного преподавателя, '
                          'то можете воспользоваться кнопкой ниже для просмотра ID всех преподавателей.\n\n'
                          'Вы можете воспользоваться кнопкой назад для отмены действия и выхода в меню.',
-                         reply_markup=build_reply_keyboard([[BACK]]))  # NEED ADD BUTTON TO WATCH ID TEACHERS
+                         reply_markup=show_teachers())
 
 
 @router.message(F.text, CreateCourse.teacher_id, IsAdmin())
@@ -186,7 +188,7 @@ async def create_course_type_course(message: Message, state: FSMContext):
         data_to_accept = (f'<b><i>Преподаватель:</b></i> {teacher_name} (id: {data["teacher_id"]})\n'
                           f'<b><i>Название:</b></i> {data["name"]}\n'
                           f'<b><i>Описание:</b></i> {data["description"]}\n'
-                          f'<b><i>Стоимость в месяц:</b></i> {data["cost_per_month"]}\n'
+                          f'<b><i>Стоимость в месяц:</b></i> {data["cost_per_month"]}₽\n'
                           f'<b><i>Тип курса:</b></i> {data["type_course"]}\n')
 
         await message.answer('Отлично! Почти все готово. Осталось сверить и подтвердить введенные данные.\n\n'
@@ -242,7 +244,7 @@ async def create_course_timetable(message: Message, state: FSMContext):
     data_to_accept = (f'<b><i>Преподаватель:</i></b> {teacher_name} (id: {data["teacher_id"]})\n'
                       f'<b><i>Название:</i></b> {data["name"]}\n'
                       f'<b><i>Описание:</i></b> {data["description"]}\n'
-                      f'<b><i>Стоимость в месяц:</i></b> {data["cost_per_month"]}\n'
+                      f'<b><i>Стоимость в месяц:</i></b> {data["cost_per_month"]}₽\n'
                       f'<b><i>Тип курса:</i></b> {data["type_course"]}\n'
                       f'<b><i>Доступное количество мест:</i></b> {data["available_places"]}\n'
                       f'<b><i>Расписание:</i></b> '
@@ -251,8 +253,7 @@ async def create_course_timetable(message: Message, state: FSMContext):
     await message.answer('Отлично! Почти все готово. Осталось сверить и подтвердить введенные данные.\n\n'
                          f'{data_to_accept}\n\n'
                          f'Воспользуйтесь клавиатурой ниже, чтобы подтвердить или отменить добавление нового курса',
-                         reply_markup=build_reply_keyboard([[ACCEPT, BACK]]),
-                         parse_mode='HTML')
+                         reply_markup=build_reply_keyboard([[ACCEPT, BACK]]))
 
 
 @router.message(F.text.lower() == ACCEPT.lower(), CreateCourse.accept, IsAdmin())
@@ -265,3 +266,14 @@ async def create_course_accept(message: Message, state: FSMContext):
 
 
 """   ---Add Course THE END---   """
+
+
+"""   ---View Courses START---   """
+
+
+@router.message(F.text.lower() == VIEW_COURSES.lower(), IsAdmin())
+async def view_courses(message: Message):
+    course = db.select_courses()[0]
+    await message.answer(print_course(course),
+                         reply_markup=paginator_courses())
+
