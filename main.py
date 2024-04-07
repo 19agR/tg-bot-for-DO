@@ -3,7 +3,7 @@ from aiogram import Bot, Dispatcher
 from handlers import user, admin
 from callbacks import admin_callbacks
 
-token = '6857731639:AAFhSrrHn1kJBck4XaXPguipZ_iIEwMDgdM'
+token = '6760277917:AAGnmInTf_B3mgEs9Yo6OoALtjtfbDPWq1k'
 
 bot = Bot(token, parse_mode='HTML')
 dp = Dispatcher()

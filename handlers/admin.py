@@ -78,8 +78,8 @@ async def add_new_teacher_phone_number(message: Message, state: FSMContext):
     data = await state.get_data()
     await state.set_state(AddNewTeacher.accept)
     await message.answer('Проверьте введенные данные:\n'
-                         f'<b><i>ФИО:</b></i> {data["full_name"]}\n'
-                         f'<b><i>Номер телефона:</b></i> {data["phone_number"]}\n\n'
+                         f'<b><i>ФИО:</i></b> {data["full_name"]}\n'
+                         f'<b><i>Номер телефона:</i></b> {data["phone_number"]}\n\n'
                          'Если все верно, нажмите "Подтвердить". Если хотите отменить добавление, нажмите "Назад"',
                          reply_markup=build_reply_keyboard([[ACCEPT, BACK]]))
 
@@ -102,26 +102,75 @@ async def add_new_teacher_accept(message: Message, state: FSMContext):
 
 
 @router.message(F.text.lower() == BACK.lower(), CreateCourse(), IsAdmin())
-async def add_new_teacher_cancel(message: Message, state: FSMContext):
+async def add_new_course_cancel(message: Message, state: FSMContext):
+    data = await state.get_data()
+    if 'course_to_redact' in data:
+        db.redact_course(data)
+        await message.answer('Редактирование курса завершено. Все изменения сохранены.\n'
+                             'Выберите дальнейшее действие в меню',
+                             reply_markup=redact_curses_menu())
+    else:
+        await message.answer('Создание нового курса отменено.\n'
+                             'Выберите дальнейшее действие в меню',
+                             reply_markup=redact_curses_menu())
     await state.clear()
-    await message.answer('Создание нового курса отменено.\n'
-                         'Выберите дальнейшее действие в меню',
-                         reply_markup=redact_curses_menu())
 
 
 @router.message(F.text.lower() == CREATE_NEW_COURSE.lower(), IsAdmin())
 async def create_new_course(message: Message, state: FSMContext):
     await state.set_state(CreateCourse.teacher_id)
-    await message.answer('Вы зашли в форму создания нового курса. \n'
-                         '<b>Введите ID преподавателя</b>, который будет вести этот курс.\n\n'
-                         'Если Вы не помните ID нужного преподавателя, '
-                         'то можете воспользоваться кнопкой ниже для просмотра ID всех преподавателей.\n\n'
-                         'Вы можете воспользоваться кнопкой назад для отмены действия и выхода в меню.',
-                         reply_markup=show_teachers())
+
+    data = await state.get_data()
+    if 'course_to_redact' in data:
+        course = data['course_to_redact']
+        course_id = course[0]
+        teacher_id = course[1]
+        teacher_name = db.select_teacher(teacher_id)[1]
+        name = course[2]
+        description = course[3]
+        cost_per_month = course[4]
+        type_course = course[5]
+        available_places = course[6]
+        timetable = course[7]
+
+        await state.update_data(
+            course_id=course_id,
+            teacher_id=teacher_id,
+            name=name,
+            description=description,
+            cost_per_month=cost_per_month,
+            type_course=type_course,
+            available_places=available_places,
+            timetable=timetable,
+        )
+
+        text = (f'Вы выбрали курс "{name}" с преподавателем {teacher_name} для редактирования. \n'
+                f'Если вы хотите оставить текущего преподавателя, то нажмите кнопку "Оставить"\n\n'
+                f'Если же вы хотите сменить преподавателя курса, то ')
+    else:
+        text = 'Вы зашли в форму создания нового курса. \n'
+
+    text += ('<b>Введите ID преподавателя</b>, который будет вести этот курс.\n\n'
+             'Если Вы не помните ID нужного преподавателя, '
+             'то можете воспользоваться кнопкой ниже для просмотра ID всех преподавателей.\n\n'
+             'Вы можете воспользоваться кнопкой назад для отмены действия и выхода в меню.')
+
+    await message.answer(text, reply_markup=show_teachers(redact='course_to_redact' in data))
 
 
 @router.message(F.text, CreateCourse.teacher_id, IsAdmin())
-async def create_course_teacher_id(message: Message, state: FSMContext):
+async def create_course_teacher_id(message: Message, state: FSMContext, stay=False):
+    data = await state.get_data()
+
+    if 'course_to_redact' in data and stay:
+        await state.set_state(CreateCourse.name)
+
+        await message.answer(f'Отлично! Преподаватель остался без изменений.\n\n'
+                             'Теперь введите новое название курса или нажмите кнопку "Оставить"',
+                             reply_markup=build_reply_keyboard([[STAY, BACK]]))
+
+        return
+
     if not message.text.isdigit():
         await message.answer('ID Преподавателя должно быть числом. Попробуйте снова.\n\n'
                              'Вы можете воспользоваться кнопкой назад для отмены действия и выхода в меню.',
@@ -133,36 +182,73 @@ async def create_course_teacher_id(message: Message, state: FSMContext):
     await state.set_state(CreateCourse.name)
 
     teacher_name = db.select_teacher(teacher_id)[1]
-    await message.answer(f'Отлично! {teacher_name} выбран как преподаватель для этого курса.\n\n'
-                         'Теперь введите название курса.',
-                         reply_markup=build_reply_keyboard([[BACK]]))
+
+    if 'course_to_redact' in data:
+        await message.answer(f'Отлично! {teacher_name} выбран как преподаватель для этого курса.\n\n'
+                             'Теперь введите новое название курса или нажмите кнопку "Оставить"',
+                             reply_markup=build_reply_keyboard([[STAY, BACK]]))
+    else:
+        await message.answer(f'Отлично! {teacher_name} выбран как преподаватель для этого курса.\n\n'
+                             'Теперь введите название курса.',
+                             reply_markup=build_reply_keyboard([[BACK]]))
 
 
 @router.message(F.text, CreateCourse.name, IsAdmin())
 async def create_course_name(message: Message, state: FSMContext):
-    await state.update_data(name=message.text)
     await state.set_state(CreateCourse.description)
 
+    if message.text.lower() == 'оставить':
+        await message.answer('Название осталось без изменений. Введите новое описание для этого курса или нажмите '
+                             '"Оставить".\n'
+                             'Если вы закончили изменения, нажмите кнопку "Назад"',
+                             reply_markup=build_reply_keyboard([[STAY, BACK]]))
+        return
+
+    data = await state.get_data()
+    kb = build_reply_keyboard([[STAY, BACK]]) if 'course_to_redact' in data else build_reply_keyboard([[BACK]])
+
+    await state.update_data(name=message.text)
     await message.answer('Название сохранено. Введите подробное описание для этого курса.',
-                         reply_markup=build_reply_keyboard([[BACK]]))
+                         reply_markup=kb)
 
 
 @router.message(F.text, CreateCourse.description, IsAdmin())
 async def create_course_description(message: Message, state: FSMContext):
-    await state.update_data(description=message.text)
     await state.set_state(CreateCourse.cost_per_month)
 
+    if message.text.lower() == 'оставить':
+        await message.answer('Описание осталось без изменений. Укажите, пожалуйста, новую стоимость в месяц для этого '
+                             'курса или нажмите кнопку "Оставить".',
+                             reply_markup=build_reply_keyboard([[STAY, BACK]]))
+        return
+
+    data = await state.get_data()
+    kb = build_reply_keyboard([[STAY, BACK]]) if 'course_to_redact' in data else build_reply_keyboard([[BACK]])
+
+    await state.update_data(description=message.text)
     await message.answer('Описание сохранено. Укажите, пожалуйста, стоимость в месяц для этого курса.',
-                         reply_markup=build_reply_keyboard([[BACK]]))
+                         reply_markup=kb)
 
 
 @router.message(F.text, CreateCourse.cost_per_month, IsAdmin())
 async def create_course_cost_per_month(message: Message, state: FSMContext):
+    if message.text.lower() == 'оставить':
+        await state.set_state(CreateCourse.type_course)
+        await message.answer('Стоимость курса осталась без изменений. Теперь укажите тип курса:\n'
+                             '- Индивидуальные занятия\n'
+                             '- Групповые занятия',
+                             reply_markup=build_reply_keyboard([
+                                 ['Индивидуальные', 'Групповые'],
+                                 [BACK]
+                             ]))
+        return
+
     if not message.text.isdigit():
         await message.answer('Стоимость должна быть числом. Попробуйте снова.\n\n'
                              'Вы можете воспользоваться кнопкой назад для отмены действия и выхода в меню.',
                              reply_markup=build_reply_keyboard([[BACK]]))
         return
+
     await state.update_data(cost_per_month=int(message.text))
     await state.set_state(CreateCourse.type_course)
 
@@ -185,11 +271,11 @@ async def create_course_type_course(message: Message, state: FSMContext):
 
         data = await state.get_data()
         teacher_name = db.select_teacher(data['teacher_id'])[1]
-        data_to_accept = (f'<b><i>Преподаватель:</b></i> {teacher_name} (id: {data["teacher_id"]})\n'
-                          f'<b><i>Название:</b></i> {data["name"]}\n'
-                          f'<b><i>Описание:</b></i> {data["description"]}\n'
-                          f'<b><i>Стоимость в месяц:</b></i> {data["cost_per_month"]}₽\n'
-                          f'<b><i>Тип курса:</b></i> {data["type_course"]}\n')
+        data_to_accept = (f'<i><b>Преподаватель:</b></i> {teacher_name} (id: {data["teacher_id"]})\n'
+                          f'<i><b>Название:</b></i> {data["name"]}\n'
+                          f'<i><b>Описание:</b></i> {data["description"]}\n'
+                          f'<i><b>Стоимость в месяц:</b></i> {data["cost_per_month"]}₽\n'
+                          f'<i><b>Тип курса:</b></i> {data["type_course"]}\n')
 
         await message.answer('Отлично! Почти все готово. Осталось сверить и подтвердить введенные данные.\n\n'
                              f'{data_to_accept}\n\n'
@@ -201,9 +287,13 @@ async def create_course_type_course(message: Message, state: FSMContext):
         await state.update_data(type_course=type_course)
         await state.set_state(CreateCourse.available_places)
 
+        data = await state.get_data()
+        hint = data.get('available_places', False)
+        kb = build_reply_keyboard([[hint, BACK]]) if hint else build_reply_keyboard([[BACK]])
+
         await message.answer('Отлично! Осталось еще немного.\n\n '
                              'Укажите, пожалуйста, количество доступных мест в группе.',
-                             reply_markup=build_reply_keyboard([[BACK]]))
+                             reply_markup=kb)
     else:
         await message.answer('К сожалению, я Вас я не понимаю. Введите: "Индивидуальные" или "Групповые"'
                              ' или нажмите на соответствующую кнопку.\n\n'
@@ -223,19 +313,23 @@ async def create_course_available_places(message: Message, state: FSMContext):
     await state.set_state(CreateCourse.timetable)
     await state.update_data(available_places=int(message.text))
 
+    data = await state.get_data()
+    cur_timetable = 'timetable' in data
+    text = ', или нажмите кнопку "Оставить"' if cur_timetable else ''
+
     await message.answer('Введите расписание для данной группы, если оно уже утверждено или "Нет" в случае, '
-                         'если действующего расписания еще нет\n\n'
+                         f'если действующего расписания еще нет{text}\n\n'
                          'Желательный формат расписания:\n'
                          '<День недели> - <Время в часах и минутах>\n\n'
                          'Вы можете воспользоваться кнопкой назад для отмены действия и выхода в меню.',
-                         reply_markup=build_reply_keyboard([['Расписания еще нет'], [BACK]]))
+                         reply_markup=build_reply_keyboard([[STAY, 'Расписания еще нет'], [BACK]]), parse_mode=None)
 
 
 @router.message(F.text, CreateCourse.timetable, IsAdmin())
 async def create_course_timetable(message: Message, state: FSMContext):
     if 'нет' in message.text:
         await state.update_data(timetable=None)
-    else:
+    elif message.text.lower() != 'оставить':
         await state.update_data(timetable=message.text)
 
     await state.set_state(CreateCourse.accept)
@@ -248,7 +342,7 @@ async def create_course_timetable(message: Message, state: FSMContext):
                       f'<b><i>Тип курса:</i></b> {data["type_course"]}\n'
                       f'<b><i>Доступное количество мест:</i></b> {data["available_places"]}\n'
                       f'<b><i>Расписание:</i></b> '
-                      f'{timetable if (timetable := data["available_places"]) is not None else "отсутствует"}')
+                      f'{timetable if (timetable := data["timetable"]) is not None else "отсутствует"}')
 
     await message.answer('Отлично! Почти все готово. Осталось сверить и подтвердить введенные данные.\n\n'
                          f'{data_to_accept}\n\n'
@@ -259,14 +353,17 @@ async def create_course_timetable(message: Message, state: FSMContext):
 @router.message(F.text.lower() == ACCEPT.lower(), CreateCourse.accept, IsAdmin())
 async def create_course_accept(message: Message, state: FSMContext):
     data = await state.get_data()
-    db.add_course(data)
+
+    if 'course_to_redact' in data:
+        db.redact_course(data)
+    else:
+        db.add_course(data)
 
     await message.answer('Данные о курсе успешно внесены в базу данных!',
                          reply_markup=main_admin())
 
 
 """   ---Add Course THE END---   """
-
 
 """   ---View Courses START---   """
 
@@ -276,4 +373,3 @@ async def view_courses(message: Message):
     course = db.select_courses()[0]
     await message.answer(print_course(course),
                          reply_markup=paginator_courses())
-

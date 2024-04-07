@@ -14,10 +14,12 @@ async def start(message: Message):
     text = open('data/texts/greet_user.txt', encoding='utf-8').read()
     await message.answer(text, reply_markup=main_user())
 
+    print(message.from_user.id, message.from_user.username)
 
-@router.message(F.text.lower() == LIST_AVAILABLE_CURSES.lower(), IsNotAdmin())
-async def list_available_curses(message: Message):
-    await message.answer('Скоро здесь будет список доступных курсов')
+
+# @router.message(F.text.lower() == LIST_AVAILABLE_CURSES.lower(), IsNotAdmin())
+# async def list_available_curses(message: Message):
+
 
 
 @router.message(F.text.lower() == MY_CURSES.lower(), IsNotAdmin())

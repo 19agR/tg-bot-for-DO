@@ -2,11 +2,12 @@ from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
-from handlers.admin import add_new_teacher_cancel
+from handlers.admin import add_new_teacher_cancel, create_new_course, create_course_teacher_id
 from keyboards.inline_keyboards import inline_remove_message, PaginationCourses, paginator_courses
 from keyboards.reply_keyboards import redact_curses_menu
 from utils.db import db
 from utils.mini_functions import print_course
+from utils.states import CreateCourse
 
 router = Router()
 
@@ -17,6 +18,13 @@ async def callback_show_teachers(call: CallbackQuery):
     prepared_text = '\n'.join(f'<b><i>ID:</i></b> {t[0]}; <b><i>ФИО:</i></b> {t[1]}' for t in teachers)
 
     await call.message.answer(prepared_text, reply_markup=inline_remove_message())
+    await call.answer()
+
+
+@router.callback_query(F.data == 'stay_teacher')
+async def callback_show_teachers(call: CallbackQuery, state: FSMContext):
+    await create_course_teacher_id(call.message, state=state, stay=True)
+
     await call.answer()
 
 
@@ -49,6 +57,10 @@ async def callback_for_pagination_courses(call: CallbackQuery, callback_data: Pa
     await call.message.edit_text(print_course(course), reply_markup=paginator_courses(next_page))
 
 
-@router.callback_query(PaginationCourses.filter(F.action == 'info'))
-async def callback_pag_info(call: CallbackQuery):
+@router.callback_query(PaginationCourses.filter(F.action == 'select'))
+async def callback_pag_info(call: CallbackQuery, callback_data: PaginationCourses, state: FSMContext):
+    cur_page = callback_data.page
+    course = db.select_courses()[cur_page - 1]
+    await state.update_data(course_to_redact=course)
+    await create_new_course(call.message, state)
     await call.answer()

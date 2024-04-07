@@ -67,7 +67,7 @@ class CoursesDataBase:
             print('Ошибка формата переданных данных для добавления учителя')
             return False
 
-        query = "INSERT INTO Teachers (ФИО, 'Номер телефона') VALUES (?, ?)"
+        query = "INSERT INTO Teachers (ФИО, [Номер телефона]) VALUES (?, ?)"
         self.execute(query, data=(full_name, phone_number))
 
         return True
@@ -94,13 +94,13 @@ class CoursesDataBase:
             available_places = data['available_places']
             timetable = data['timetable']
         except KeyError:
-            print('Ошибка формата переданных данных для добавления учителя')
+            print('Ошибка формата переданных данных для добавления курса')
             return
 
         query = """
         INSERT INTO Courses (
-        'id Преподавателя', Название, Описание,
-        'Стоимость в месяц', 'Тип курса', 'Доступных мест', 'Расписание'
+        [id Преподавателя], Название, Описание,
+        [Стоимость в месяц], [Тип курса], [Доступных мест], Расписание
         )
         VALUES (?, ?, ?, ?, ?, ?, ?)
         """
@@ -108,12 +108,34 @@ class CoursesDataBase:
                      data=(teacher_id, name, description, cost_per_month, type_course, available_places, timetable))
         self.quantity_courses += 1
 
+    def redact_course(self, data):
+        course_id = data['course_id']
+        teacher_id = data['teacher_id']
+        name = data['name']
+        description = data['description']
+        cost_per_month = data['cost_per_month']
+        type_course = data['type_course']
+        available_places = data['available_places']
+        timetable = data['timetable']
+        query = f"""
+                UPDATE Courses SET
+                [id Преподавателя]='{teacher_id}',
+                Название='{name}',
+                Описание='{description}',
+                [Стоимость в месяц]='{cost_per_month}',
+                [Тип курса]='{type_course}',
+                [Доступных мест]='{available_places}',
+                Расписание='{timetable}'
+                WHERE [id Курса] = {course_id}
+                """
+        self.execute(query)
+
     def select_courses(self):
         query = "SELECT * FROM Courses"
         return self.execute(query, fetchall=True)
 
     def select_course(self, course_id):
-        query = f"SELECT * FROM Courses WHERE 'id Курса' = {course_id}"
+        query = f"SELECT * FROM Courses WHERE [id Курса] = {course_id}"
         return self.execute(query, fetchone=True)
 
     def select_teacher(self, teacher_id):
