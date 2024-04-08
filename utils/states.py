@@ -16,3 +16,9 @@ class CreateCourse(StatesGroup):
     available_places = State()
     timetable = State()
     accept = State()
+
+
+class SelectCourseByUser(StatesGroup):
+    full_name = State()
+    phone_number = State()
+    accept = State()

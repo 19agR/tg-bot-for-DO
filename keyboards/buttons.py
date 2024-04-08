@@ -10,10 +10,10 @@ NOTIFICATIONS = 'Уведомления'
 # admin keyboard
 REQUESTS = 'Заявки'
 REDACT_HELP = 'Редактировать вкладку "Помощь"'
-REDACT_CURSES = 'Редактировать занятия'
+REDACT_CURSES = 'Курсы / Учителя'
 
 # admin REDACT_CURSES keyboard
 CREATE_NEW_COURSE = 'Создать новый курс'
-VIEW_COURSES = 'Просмотр созданных курсов'
-ADD_NEW_TEACHER = 'Добавить нового учителя'
+VIEW_COURSES = 'Редактирование курсов'
+ADD_NEW_TEACHER = 'Добавление учителя'
 STAY = 'Оставить'

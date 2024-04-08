@@ -6,13 +6,14 @@ from handlers.admin import add_new_teacher_cancel, create_new_course, create_cou
 from keyboards.inline_keyboards import inline_remove_message, PaginationCourses, paginator_courses
 from keyboards.reply_keyboards import redact_curses_menu
 from utils.db import db
+from utils.filters import IsAdmin
 from utils.mini_functions import print_course
 from utils.states import CreateCourse
 
 router = Router()
 
 
-@router.callback_query(F.data == 'show_teachers')
+@router.callback_query(F.data == 'show_teachers', IsAdmin())
 async def callback_show_teachers(call: CallbackQuery):
     teachers = db.select_teachers()
     prepared_text = '\n'.join(f'<b><i>ID:</i></b> {t[0]}; <b><i>ФИО:</i></b> {t[1]}' for t in teachers)
@@ -21,43 +22,26 @@ async def callback_show_teachers(call: CallbackQuery):
     await call.answer()
 
 
-@router.callback_query(F.data == 'stay_teacher')
+@router.callback_query(F.data == 'stay_teacher', IsAdmin())
 async def callback_show_teachers(call: CallbackQuery, state: FSMContext):
     await create_course_teacher_id(call.message, state=state, stay=True)
-
     await call.answer()
 
 
-@router.callback_query(F.data == 'inline_back')
-async def callback_inline_back(call: CallbackQuery, state: FSMContext):
-    await state.clear()
-    await call.message.edit_text('Создание нового курса отменено.\n'
-                                 'Выберите дальнейшее действие в меню')
-    await call.answer()
+# @router.callback_query(F.data == 'inline_back')
+# async def callback_inline_back(call: CallbackQuery, state: FSMContext):
+#     await state.clear()
+#     await call.message.edit_text('Создание нового курса отменено.\n'
+#                                  'Выберите дальнейшее действие в меню')
+#     await call.answer()
 
 
-@router.callback_query(F.data == 'remove_message')
+@router.callback_query(F.data == 'remove_message', IsAdmin())
 async def callback_remove_message(call: CallbackQuery):
     await call.message.delete()
 
 
-@router.callback_query(PaginationCourses.filter(F.action.in_(['prev', 'next'])))
-async def callback_for_pagination_courses(call: CallbackQuery, callback_data: PaginationCourses):
-    action, cur_page = callback_data.action, callback_data.page
-    quantity = db.quantity_courses
-    next_page = cur_page + 1 if action == 'next' else cur_page - 1
-
-    if next_page <= 0:
-        next_page = quantity
-    elif next_page == quantity + 1:
-        next_page = 1
-
-    course = db.select_courses()[next_page - 1]
-
-    await call.message.edit_text(print_course(course), reply_markup=paginator_courses(next_page))
-
-
-@router.callback_query(PaginationCourses.filter(F.action == 'select'))
+@router.callback_query(PaginationCourses.filter(F.action == 'select'), IsAdmin())
 async def callback_pag_info(call: CallbackQuery, callback_data: PaginationCourses, state: FSMContext):
     cur_page = callback_data.page
     course = db.select_courses()[cur_page - 1]

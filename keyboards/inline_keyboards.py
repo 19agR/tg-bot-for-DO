@@ -18,13 +18,11 @@ def show_teachers(redact=False):
     if redact:
         buttons = [
             [InlineKeyboardButton(text='Список преподавателей', callback_data='show_teachers')],
-            [InlineKeyboardButton(text=STAY, callback_data='stay_teacher'),
-             InlineKeyboardButton(text=BACK, callback_data='inline_back')]
+            [InlineKeyboardButton(text=STAY, callback_data='stay_teacher')]
         ]
     else:
         buttons = [
-            [InlineKeyboardButton(text='Список преподавателей', callback_data='show_teachers'),
-             InlineKeyboardButton(text=BACK, callback_data='inline_back')]
+            [InlineKeyboardButton(text='Список преподавателей', callback_data='show_teachers')]
         ]
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)

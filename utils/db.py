@@ -48,6 +48,50 @@ class CoursesDataBase:
         """
         self.execute(query_courses)
 
+        query_students = """
+        CREATE TABLE IF NOT EXISTS Students (
+        'id Ученика' INTEGER PRIMARY KEY AUTOINCREMENT,
+        ФИО TEXT NOT NULL,
+        'Номер телефона' TEXT NOT NULL,
+        'tg_user_id' INTEGER NOT NULL,
+        'tg_username' INTEGER NOT NULL,
+        'Выбранные курсы' TEXT
+        )
+        """
+        self.execute(query_students)
+
+    def add_course_to_user(self, data: dict):
+        """
+        format for param data: {
+            'full_name',
+            'phone_number',
+            'tg_user_id',
+            'tg_username',
+            'selected_course'
+        }
+        """
+
+        try:
+            full_name = data['name']
+            phone_number = data['phone_number']
+            tg_user_id = data['tg_user_id']
+            tg_username = data['tg_username']
+            selected_course = data['course_id']
+
+            if not isinstance(full_name, str) or not isinstance(phone_number, str):
+                raise KeyError()
+
+        except KeyError:
+            print('Ошибка формата переданных данных для добавления курса к ученику')
+            return False
+
+        query = ("INSERT INTO Students (ФИО, [Номер телефона], tg_user_id, tg_username, [Выбранные курсы]) "
+                 "VALUES (?, ?, ?, ?, ?)")
+        self.execute(query, data=(full_name, phone_number, tg_user_id, tg_username, selected_course))
+
+        return True
+
+
     def add_teacher(self, data: dict):
         """
         format for param data: {
