@@ -14,6 +14,16 @@ def inline_remove_message():
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
+def inline_request_accept(user_id, course_id):
+    buttons = [
+        [InlineKeyboardButton(text='Принять', callback_data=f'request_accept_{user_id}_{course_id}'),
+         InlineKeyboardButton(text='Отменить', callback_data=f'request_decline_{user_id}_{course_id}'),
+         InlineKeyboardButton(text='Закрыть', callback_data='remove_message')]
+    ]
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
 def show_teachers(redact=False):
     if redact:
         buttons = [

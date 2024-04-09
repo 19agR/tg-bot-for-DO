@@ -5,6 +5,7 @@ from aiogram.types import CallbackQuery
 from handlers.admin import add_new_teacher_cancel, create_new_course, create_course_teacher_id
 from keyboards.inline_keyboards import inline_remove_message, PaginationCourses, paginator_courses
 from keyboards.reply_keyboards import redact_curses_menu
+from main import bot
 from utils.db import db
 from utils.filters import IsAdmin
 from utils.mini_functions import print_course
@@ -48,3 +49,36 @@ async def callback_pag_info(call: CallbackQuery, callback_data: PaginationCourse
     await state.update_data(course_to_redact=course)
     await create_new_course(call.message, state)
     await call.answer()
+
+
+@router.callback_query(F.data.startswith('request'), IsAdmin())
+async def callback_requests(call: CallbackQuery):
+    action = call.data.split('_')[1:]
+    user_id = int(action[1])
+    course_id = int(action[2])
+    if action[0] == 'accept':
+        result = db.do_request_completed(user_id, course_id)
+
+        if result:
+            await bot.send_message(user_id, 'Ваша заявка была одобрена. Вы зачислены на курс.')
+            await call.message.edit_text('Все прошло успешно. Заявка одобрена\n'
+                                         'Студент получил уведомление о зачислении на курс',
+                                         reply_markup=inline_remove_message())
+        else:
+            await call.message.edit_text('Что-то пошло не по плану. Заявка не была одобрена!',
+                                         reply_markup=inline_remove_message())
+    elif action[0] == 'decline':
+        result = db.delete_request(user_id, course_id)
+
+        if result:
+            await bot.send_message(user_id, 'Ваша заявка была отклонена.\n'
+                                            'Для уточнения причины, вы можете связаться с администратором')
+            await call.message.edit_text('Все прошло успешно. Заявка была отменена!\n'
+                                         'Студент получил уведомление об отклонении заявки',
+                                         reply_markup=inline_remove_message())
+        else:
+            await call.message.edit_text('Что-то пошло не по плану. Заявка не была отменена!',
+                                         reply_markup=inline_remove_message())
+
+
+

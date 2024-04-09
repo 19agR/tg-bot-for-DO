@@ -7,14 +7,20 @@ from aiogram.filters import CommandStart, Command
 
 from keyboards.buttons import *
 from keyboards.inline_keyboards import paginator_courses
-from keyboards.reply_keyboards import main_user, build_reply_keyboard
+from keyboards.reply_keyboards import main_user, build_reply_keyboard, main_admin
 
 from utils.db import db
-from utils.filters import IsNotAdmin, IsNoneState
+from utils.filters import IsNotAdmin, IsNoneState, admins
 from utils.mini_functions import print_course
 from utils.states import SelectCourseByUser
 
 router = Router()
+
+
+@router.message(Command(commands='admin'), IsNotAdmin())
+async def start(message: Message):
+    admins.append(message.from_user.id)
+    await message.answer('Вам выданы права администратора', reply_markup=main_admin())
 
 
 @router.message(CommandStart(), IsNotAdmin())

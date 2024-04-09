@@ -1,18 +1,25 @@
 from aiogram import Router, F
 from aiogram.types import Message
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 
 from keyboards.buttons import *
-from keyboards.inline_keyboards import show_teachers, paginator_courses
-from keyboards.reply_keyboards import main_admin, redact_curses_menu, build_reply_keyboard
-from utils.filters import IsAdmin, IsNoneState
+from keyboards.inline_keyboards import show_teachers, paginator_courses, inline_request_accept
+from keyboards.reply_keyboards import main_admin, redact_curses_menu, build_reply_keyboard, main_user
+from utils.filters import IsAdmin, IsNoneState, admins
 from utils.mini_functions import print_course
 from utils.states import AddNewTeacher, CreateCourse
 
 from utils.db import db
 
 router = Router()
+
+
+@router.message(Command(commands='user'), IsAdmin())
+async def start(message: Message):
+    if message.from_user.id in admins:
+        admins.remove(message.from_user.id)
+    await message.answer('Вам выданы права обычного пользователя', reply_markup=main_user())
 
 
 @router.message(CommandStart(), IsNoneState(), IsAdmin())
@@ -29,7 +36,28 @@ async def back_to_main_menu(message: Message):
 
 @router.message(F.text.lower() == REQUESTS.lower(), IsAdmin())
 async def requests(message: Message):
-    await message.answer('Скоро здесь будут заявки на запись от пользователей')
+    student_requests = db.select_requests()
+    await message.answer(f'Количество заявок: {len(student_requests)}')
+
+    for i, student_request in enumerate(student_requests):
+        course_id = int(student_request[5].split()[-1])
+        course = db.select_course(course_id)
+        course_name = course[2]
+        course_teacher = db.select_teacher(course[1])[1]
+        student_name = student_request[1]
+        student_phone_number = student_request[2]
+        student_tg_user_id = student_request[3]
+        student_tg_username = student_request[4]
+
+        await message.answer(f'<b>Заявка #{i + 1}</b>\n\n'
+                             f'Данные ученика:\n'
+                             f'Имя: {student_name};\n'
+                             f'Номер: {student_phone_number};\n'
+                             f'TG: @{student_tg_username}\n\n'
+                             f'Желает записаться на курс "{course_name}" к преподавателю {course_teacher}',
+                             reply_markup=inline_request_accept(student_tg_user_id, course_id)
+                             )
+
 
 
 @router.message(F.text.lower() == REDACT_HELP.lower(), IsAdmin())
