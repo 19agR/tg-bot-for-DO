@@ -42,9 +42,13 @@ async def back_to_main_menu(message: Message):
 
 @router.message(F.text.lower() == LIST_AVAILABLE_CURSES.lower(), IsNotAdmin())
 async def list_available_curses(message: Message):
-    course = db.select_courses()[0]
-    await message.answer(print_course(course),
-                         reply_markup=paginator_courses())
+    courses = db.select_courses()
+    if courses:
+        course = courses[0]
+        await message.answer(print_course(course),
+                             reply_markup=paginator_courses())
+    else:
+        await message.answer('К сожалению, администраторами не было добавлено еще ни одного курса. Попробуйте позже')
 
 
 @router.message(F.text, SelectCourseByUser.full_name, IsNotAdmin())

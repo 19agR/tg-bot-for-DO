@@ -4,6 +4,7 @@ import sqlite3
 class CoursesDataBase:
     def __init__(self, path):
         self.path = path
+        self.create_tables()
         self.quantity_courses = self.get_quantity_courses()
 
     def connect(self):
@@ -236,13 +237,10 @@ class CoursesDataBase:
         return True
 
 
-
-
 db = None  # need to pass import error
 if __name__ == '__main__':
     db = CoursesDataBase('../data/courses_db.sqlite3')
     print(db.select_courses())
-    db.create_tables()
 else:
     db = CoursesDataBase('data/courses_db.sqlite3')  # this is needed to be able to open db from other files
 

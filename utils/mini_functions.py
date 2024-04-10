@@ -16,7 +16,7 @@ def print_course(course):
     timetable = course[7]
 
     available_places = f'<b><i>Доступных мест:</i></b>  {available_places}\n' if available_places not in [None, 'None'] else ''
-    timetable = f'<b><i>Расписание занятий:</i></b>  {timetable}\n' if timetable not in [None, 'None'] else ''
+    timetable = f'<b><i>Расписание занятий:</i></b>\n{timetable}\n' if timetable not in [None, 'None'] else ''
 
     prepared_text = (f'<b><u>Информация о курсе</u></b>\n\n'
                      f'<b><i>Название:</i></b>  {name}\n'

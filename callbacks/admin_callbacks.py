@@ -5,7 +5,6 @@ from aiogram.types import CallbackQuery
 from handlers.admin import add_new_teacher_cancel, create_new_course, create_course_teacher_id
 from keyboards.inline_keyboards import inline_remove_message, PaginationCourses, paginator_courses
 from keyboards.reply_keyboards import redact_curses_menu
-from main import bot
 from utils.db import db
 from utils.filters import IsAdmin
 from utils.mini_functions import print_course
@@ -19,7 +18,10 @@ async def callback_show_teachers(call: CallbackQuery):
     teachers = db.select_teachers()
     prepared_text = '\n'.join(f'<b><i>ID:</i></b> {t[0]}; <b><i>ФИО:</i></b> {t[1]}' for t in teachers)
 
-    await call.message.answer(prepared_text, reply_markup=inline_remove_message())
+    if prepared_text:
+        await call.message.answer(prepared_text, reply_markup=inline_remove_message())
+    else:
+        await call.message.answer('Список преподавателей пуст. Добавьте хотя бы одного преподавателя')
     await call.answer()
 
 
@@ -60,7 +62,8 @@ async def callback_requests(call: CallbackQuery):
         result = db.do_request_completed(user_id, course_id)
 
         if result:
-            await bot.send_message(user_id, 'Ваша заявка была одобрена. Вы зачислены на курс.')
+
+            await call.bot.send_message(user_id, 'Ваша заявка была одобрена. Вы зачислены на курс.')
             await call.message.edit_text('Все прошло успешно. Заявка одобрена\n'
                                          'Студент получил уведомление о зачислении на курс',
                                          reply_markup=inline_remove_message())
@@ -71,7 +74,7 @@ async def callback_requests(call: CallbackQuery):
         result = db.delete_request(user_id, course_id)
 
         if result:
-            await bot.send_message(user_id, 'Ваша заявка была отклонена.\n'
+            await call.bot.send_message(user_id, 'Ваша заявка была отклонена.\n'
                                             'Для уточнения причины, вы можете связаться с администратором')
             await call.message.edit_text('Все прошло успешно. Заявка была отменена!\n'
                                          'Студент получил уведомление об отклонении заявки',

@@ -59,7 +59,6 @@ async def requests(message: Message):
                              )
 
 
-
 @router.message(F.text.lower() == REDACT_HELP.lower(), IsAdmin())
 async def redact_faq(message: Message):
     await message.answer('Скоро здесь можно будет редактировать вкладку "Помощь"')
@@ -344,13 +343,14 @@ async def create_course_available_places(message: Message, state: FSMContext):
     data = await state.get_data()
     cur_timetable = 'timetable' in data
     text = ', или нажмите кнопку "Оставить"' if cur_timetable else ''
+    kb = build_reply_keyboard([[STAY, 'Расписания еще нет'], [BACK]]) if cur_timetable else build_reply_keyboard([['Расписания еще нет', BACK]])
 
     await message.answer('Введите расписание для данной группы, если оно уже утверждено или "Нет" в случае, '
                          f'если действующего расписания еще нет{text}\n\n'
                          'Желательный формат расписания:\n'
                          '<День недели> - <Время в часах и минутах>\n\n'
                          'Вы можете воспользоваться кнопкой назад для отмены действия и выхода в меню.',
-                         reply_markup=build_reply_keyboard([[STAY, 'Расписания еще нет'], [BACK]]), parse_mode=None)
+                         reply_markup=kb, parse_mode=None)
 
 
 @router.message(F.text, CreateCourse.timetable, IsAdmin())
@@ -381,6 +381,7 @@ async def create_course_timetable(message: Message, state: FSMContext):
 @router.message(F.text.lower() == ACCEPT.lower(), CreateCourse.accept, IsAdmin())
 async def create_course_accept(message: Message, state: FSMContext):
     data = await state.get_data()
+    await state.clear()
 
     if 'course_to_redact' in data:
         db.redact_course(data)
@@ -398,6 +399,11 @@ async def create_course_accept(message: Message, state: FSMContext):
 
 @router.message(F.text.lower() == VIEW_COURSES.lower(), IsAdmin())
 async def view_courses(message: Message):
-    course = db.select_courses()[0]
-    await message.answer(print_course(course),
-                         reply_markup=paginator_courses())
+    courses = db.select_courses()
+    if courses:
+        course = courses[0]
+        await message.answer(print_course(course),
+                             reply_markup=paginator_courses())
+    else:
+        await message.answer('К сожалению, администраторами не было добавлено еще ни одного курса.')
+
